@@ -1,0 +1,14 @@
+; This is example configuration file which contains simple configuration of
+; the server. Modify it to adjust your's network circumstances.
+
+[zone] ; general zone configuration
+start=192.168.1.10
+end=192.168.1.50
+netmask=255.255.255.0
+gateway=192.168.1.1
+lease=86400
+dns=1.1.1.1,8.8.8.8
+
+[reservations] ; optional, put your reservations here (MAC,demand IP)
+rev1=aa:bb:cc:dd:ee:ff,192.168.1.60
+rev2=ff:ee:dd:cc:bb:aa,192.168.1.61
