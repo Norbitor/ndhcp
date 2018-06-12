@@ -4,7 +4,7 @@ import sys
 
 class DHCPServer:
     def __init__(self):
-        self.log = misc.getLogger(DHCPServer.__name__)
+        self.log = misc.getLogger(__class__.__name__)
         self.log.info('Starting DHCP server initialization...')
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
