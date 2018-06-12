@@ -1,3 +1,4 @@
+import time
 import misc
 
 class DHCPDatabase:
@@ -33,7 +34,8 @@ class InMemoryDHCPDatabase(DHCPDatabase):
             self.log.warning("Entry for MAC " + mac + " not found")
     
     def cleanup(self):
-        pass
+        curtime = time.time()
+        self.client_list = filter(lambda cli: cli[2] == None or cli[2] > curtime, self.client_list)
 
 if __name__ == '__main__':
     print('This file is not intended to run separately. Run main.py file instead.')
