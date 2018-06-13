@@ -10,9 +10,10 @@ class DHCPServer:
         self.config = configparser.ConfigParser()
         self.config.read('config.ini')
         if not self.config.sections():
-            self.log.critical("Configuration file not found or its invalid. " \
-                              "Please provide correct config.ini file.")
+            self.log.critical('Configuration file not found or its invalid. ' \
+                              'Please provide correct config.ini file.')
             sys.exit(-1)
+        self.log.info('Configuration loaded successfully')
         self.process = True
         self._setup()
 
@@ -23,15 +24,19 @@ class DHCPServer:
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_TTL, 20)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_LOOP, 1)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_IF, inet_aton(gethostbyname(gethostname())))
+    
+    def _dispatch(self, data, addr):
+        pack = misc.getGeneralPacket(data)
+        print(pack)
 
     def listen(self):
         self.socket.bind(('', 67))
+        self.log.info('Sever started. Waiting for connections...')
         while self.process:
-            data, _ = self.socket.recvfrom(1024)
+            data, client_addr = self.socket.recvfrom(1024)
             self.log.info("Received broadcast message on port 67")
+            self._dispatch(data, client_addr)
         self.socket.close()
-
-        print(data)
 
     def shutdown(self):
         self.log.info("Gracefully stopping listening...")
