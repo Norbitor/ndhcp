@@ -12,26 +12,55 @@ def getLogger(name):
     return log
 
 def getGeneralPacket(data):
-    d = {}
-    d['op']      = data[0]
-    d['htype']   = data[1]
-    d['hlen']    = data[2]
-    d['hops']    = data[3]
-    d['xid']     = int.from_bytes(data[4:8], 'big')
-    d['secs']    = int.from_bytes(data[8:10], 'big')
-    d['flags']   = int.from_bytes(data[10:12], 'big')
-    d['ciaddr']  = int.from_bytes(data[12:16], 'big')
-    d['yiaddr']  = int.from_bytes(data[16:20], 'big')
-    d['siaddr']  = int.from_bytes(data[20:24], 'big')
-    d['giaddr']  = int.from_bytes(data[24:28], 'big')
-    d['chaddr']  = ":".join('{:02x}'.format(x) for x in data[28:28+d['hlen']])
-    d['gap']     = int.from_bytes(data[44:236], 'big')
-    d['options'] = data[240:]
-    return d
+    packet = {}
+    packet['op']      = data[0]
+    packet['htype']   = data[1]
+    packet['hlen']    = data[2]
+    packet['hops']    = data[3]
+    packet['xid']     = int.from_bytes(data[4:8], 'big')
+    packet['secs']    = int.from_bytes(data[8:10], 'big')
+    packet['flags']   = int.from_bytes(data[10:12], 'big')
+    packet['ciaddr']  = int.from_bytes(data[12:16], 'big')
+    packet['yiaddr']  = int.from_bytes(data[16:20], 'big')
+    packet['siaddr']  = int.from_bytes(data[20:24], 'big')
+    packet['giaddr']  = int.from_bytes(data[24:28], 'big')
+    packet['chaddr']  = ":".join('{:02x}'.format(x) for x in data[28:28+packet['hlen']])
+    packet['gap']     = int.from_bytes(data[44:236], 'big')
+    packet['cookie']  = int.from_bytes(data[236:240], 'big')
+    packet['options'] = resolveOptions(data[240:])
+    return packet
 
 def resolveOptions(options):
-    out = {}
-    return out
+    opts = {}
+    opts['other'] = 0
+    while len(options) > 0:
+        opt = options[0]
+        if opt == 0 or opt == 255:
+            options = options[1:]
+            next
+        length = options[1]
+        if length == 1:
+            val = options[2]
+        else:
+            val = int.from_bytes(options[2:2+length], 'big')
+        if opt == 53:
+            opts['messageType'] = {
+                1: 'DISCOVER',
+                2: 'OFFER',
+                3: 'REQUEST',
+                4: 'DECLINE',
+                5: 'ACK',
+                6: 'NAK',
+                7: 'RELEASE',
+                8: 'INFORM'
+            }[val]
+        else:
+            opts['other'] += 1
+
+        options = options[1+length:]
+    
+    return opts
+
 
 if __name__ == '__main__':
     print('This file is not intended to run separately. Run main.py file instead.')
