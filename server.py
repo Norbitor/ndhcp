@@ -1,6 +1,7 @@
 import configparser
 import misc
 import sys
+from resolver import *
 from socket import *
 
 class DHCPServer:
@@ -27,7 +28,32 @@ class DHCPServer:
     
     def _dispatch(self, data, addr):
         pack = misc.getGeneralPacket(data)
+        resolver = {}
         print(pack)
+        if pack['options']['messageType'] == 'DISCOVER':
+            self.log.info('Processing DISCOVER message.')
+            resolver = DHCPDiscoverResolver(pack)
+            resolver.resolve()
+        elif pack['options']['messageType'] == 'REQUEST':
+            self.log.info('Processing REQUEST message.')
+            resolver = DHCPRequestResolver(pack)
+            resolver.resolve()
+        elif pack['options']['messageType'] == 'DECLINE':
+            self.log.info('Processing DECLINE message.')
+            resolver = DHCPDeclineResolver(pack)
+            resolver.resolve()
+        elif pack['options']['messageType'] == 'RELEASE':
+            self.log.info('Processing RELEASE message.')
+            resolver = DHCPReleaseResolver(pack)
+            resolver.resolve()
+        elif pack['options']['messageType'] == 'INFORM':
+            self.log.info('Processing INFORM message.')
+            resolver = DHCPInformResolver(pack)
+            resolver.resolve
+        self._sendPacket(resolver.toBytes(), addr)
+    
+    def _sendPacket(self, data, addr):
+        pass
 
     def listen(self):
         self.socket.bind(('', 67))
@@ -45,9 +71,6 @@ class DHCPServer:
         except OSError:
             pass
         self.log.info("Server stopped.")
-
-class DHCPResolver:
-    pass
 
 if __name__ == '__main__':
     print('This file is not intended to run separately. Run main.py file instead.')
