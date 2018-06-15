@@ -18,11 +18,32 @@ class DHCPResolver:
         raise NotImplementedError('This method has to be overrided.')
 
     def toBytes(self):
+        bpacket = bytearray()
+        bpacket.append(self.packet['op'])
+        bpacket.append(self.packet['htype'])
+        bpacket.append(self.packet['hlen'])
+        bpacket.append(self.packet['hops'])
+        print(type(self.packet['xid']))
+        bpacket += self.packet['xid'].to_bytes(4, 'big')
+        bpacket += self.packet['secs'].to_bytes(2, 'big')
+        bpacket += self.packet['flags'].to_bytes(2, 'big')
+        bpacket += self.packet['ciaddr'].to_bytes(4, 'big')
+        bpacket += self.packet['yiaddr'].to_bytes(4, 'big')
+        bpacket += self.packet['siaddr'].to_bytes(4, 'big')
+        bpacket += self.packet['giaddr'].to_bytes(4, 'big')
+        #bpacket += self.packet['chaddr'].to_bytes(16, 'big')
+        bpacket += (0).to_bytes(16, 'big')
+        bpacket += (0).to_bytes(192, 'big') # gap
+        bpacket += self.packet['cookie'].to_bytes(4, 'big')
+        # options
+        print(bpacket)
         raise NotImplementedError('not, yet')
 
 class DHCPDiscoverResolver(DHCPResolver): # DISCOVER -> OFFER
     def resolve(self):
         self.outpacket['options']['messageType'] = 2
+        if self.db.isEmpty():
+            self.outpacket['yiaddr'] = misc.ip2int(self.config['zone']['start'])
         print(self.outpacket)
 
 
@@ -46,4 +67,3 @@ class DHCPInformResolver(DHCPResolver):
     def resolve(self):
         self.outpacket['options']['messageType'] = 5
         print(self.outpacket)
-        

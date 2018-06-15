@@ -32,6 +32,9 @@ class InMemoryDHCPDatabase(DHCPDatabase):
             self.client_list.remove(client)
         else:
             self.log.warning("Entry for MAC " + mac + " not found")
+
+    def isEmpty(self):
+        return True if len(self.client_list) == 0 else False
     
     def cleanup(self):
         curtime = time.time()

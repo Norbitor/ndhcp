@@ -2,7 +2,9 @@ import configparser
 import misc
 import sys
 import db
-from resolver import *
+from resolver import DHCPDeclineResolver, DHCPDiscoverResolver, \
+                     DHCPInformResolver, DHCPReleaseResolver, \
+                     DHCPReleaseResolver, DHCPRequestResolver
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, \
                    SO_REUSEPORT, SOL_IP, IP_MULTICAST_TTL, IP_MULTICAST_LOOP, \
                    IP_MULTICAST_IF, inet_aton, SHUT_RD, gethostbyname, gethostname

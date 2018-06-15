@@ -59,7 +59,7 @@ def resolveOptions(options):
         opt = options[0]
         if opt == 0 or opt == 255:
             options = options[1:]
-            next
+            continue
         length = options[1]
         if length == 1:
             val = options[2]
