@@ -1,8 +1,11 @@
 import configparser
 import misc
 import sys
+import db
 from resolver import *
-from socket import *
+from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, \
+                   SO_REUSEPORT, SOL_IP, IP_MULTICAST_TTL, IP_MULTICAST_LOOP, \
+                   IP_MULTICAST_IF, inet_aton, SHUT_RD, gethostbyname, gethostname
 
 class DHCPServer:
     def __init__(self):
@@ -16,6 +19,7 @@ class DHCPServer:
             sys.exit(-1)
         self.log.info('Configuration loaded successfully')
         self.process = True
+        self.db = db.InMemoryDHCPDatabase()
         self._setup()
 
     def _setup(self):
@@ -32,24 +36,24 @@ class DHCPServer:
         print(pack)
         if pack['options']['messageType'] == 'DISCOVER':
             self.log.info('Processing DISCOVER message.')
-            resolver = DHCPDiscoverResolver(pack)
+            resolver = DHCPDiscoverResolver(pack, self.config, self.db)
             resolver.resolve()
         elif pack['options']['messageType'] == 'REQUEST':
             self.log.info('Processing REQUEST message.')
-            resolver = DHCPRequestResolver(pack)
+            resolver = DHCPRequestResolver(pack, self.config, self.db)
             resolver.resolve()
         elif pack['options']['messageType'] == 'DECLINE':
             self.log.info('Processing DECLINE message.')
-            resolver = DHCPDeclineResolver(pack)
+            resolver = DHCPDeclineResolver(pack, self.config, self.db)
             resolver.resolve()
         elif pack['options']['messageType'] == 'RELEASE':
             self.log.info('Processing RELEASE message.')
-            resolver = DHCPReleaseResolver(pack)
+            resolver = DHCPReleaseResolver(pack, self.config, self.db)
             resolver.resolve()
         elif pack['options']['messageType'] == 'INFORM':
             self.log.info('Processing INFORM message.')
-            resolver = DHCPInformResolver(pack)
-            resolver.resolve
+            resolver = DHCPInformResolver(pack, self.config, self.db)
+            resolver.resolve()
         self._sendPacket(resolver.toBytes(), addr)
     
     def _sendPacket(self, data, addr):

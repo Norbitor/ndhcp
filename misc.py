@@ -1,5 +1,6 @@
 import logging
 import sys
+import ipaddress
 
 def getLogger(name):
     log = logging.getLogger(name)
@@ -29,6 +30,27 @@ def getGeneralPacket(data):
     packet['cookie']  = int.from_bytes(data[236:240], 'big')
     packet['options'] = resolveOptions(data[240:])
     return packet
+
+def getGeneralOutputPacket(xid, cookie):
+    packet = {}
+    packet['op']      = 2
+    packet['htype']   = 1
+    packet['hlen']    = 6
+    packet['hops']    = 0
+    packet['xid']     = xid
+    packet['secs']    = 0
+    packet['flags']   = 0
+    packet['ciaddr']  = 0
+    packet['giaddr']  = 0
+    packet['cookie']  = cookie
+    packet['options'] = {}
+    return packet
+
+def ip2int(addr):
+    return int(ipaddress.IPv4Address(addr))
+
+def int2ip(addr):
+    return str(ipaddress.IPv4Address(addr))
 
 def resolveOptions(options):
     opts = {}
