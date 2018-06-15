@@ -7,10 +7,15 @@ class DHCPResolver:
         self.db = db
         self.outpacket = misc.getGeneralOutputPacket(packet['xid'], packet['cookie'])
         self.outpacket['siaddr'] = misc.ip2int(config['zone']['server'])
+        # tmp yet
+        self.outpacket['yiaddr'] = 0
+        self.outpacket['ciaddr'] = 0
+        self.outpacket['giaddr'] = 0
+
         self.outpacket['chaddr'] = packet['chaddr']
         self.outpacket['options']['netmask'] = misc.ip2int(config['zone']['netmask'])
         self.outpacket['options']['router']  = misc.ip2int(config['zone']['gateway'])
-        self.outpacket['options']['lease'] = config['zone']['lease']
+        self.outpacket['options']['lease'] = int(config['zone']['lease'])
         self.outpacket['options']['dhcpsrv'] = misc.ip2int(config['zone']['server'])
         self.outpacket['options']['dnssrvs'] = config['zone']['dns']
 
@@ -19,25 +24,56 @@ class DHCPResolver:
 
     def toBytes(self):
         bpacket = bytearray()
-        bpacket.append(self.packet['op'])
-        bpacket.append(self.packet['htype'])
-        bpacket.append(self.packet['hlen'])
-        bpacket.append(self.packet['hops'])
-        print(type(self.packet['xid']))
-        bpacket += self.packet['xid'].to_bytes(4, 'big')
-        bpacket += self.packet['secs'].to_bytes(2, 'big')
-        bpacket += self.packet['flags'].to_bytes(2, 'big')
-        bpacket += self.packet['ciaddr'].to_bytes(4, 'big')
-        bpacket += self.packet['yiaddr'].to_bytes(4, 'big')
-        bpacket += self.packet['siaddr'].to_bytes(4, 'big')
-        bpacket += self.packet['giaddr'].to_bytes(4, 'big')
-        #bpacket += self.packet['chaddr'].to_bytes(16, 'big')
-        bpacket += (0).to_bytes(16, 'big')
+        bpacket.append(self.outpacket['op'])
+        bpacket.append(self.outpacket['htype'])
+        bpacket.append(self.outpacket['hlen'])
+        bpacket.append(self.outpacket['hops'])
+        bpacket += self.outpacket['xid'].to_bytes(4, 'big')
+        bpacket += self.outpacket['secs'].to_bytes(2, 'big')
+        bpacket += self.outpacket['flags'].to_bytes(2, 'big')
+        bpacket += self.outpacket['ciaddr'].to_bytes(4, 'big')
+        bpacket += self.outpacket['yiaddr'].to_bytes(4, 'big')
+        bpacket += self.outpacket['siaddr'].to_bytes(4, 'big')
+        bpacket += self.outpacket['giaddr'].to_bytes(4, 'big')
+        bpacket += self.outpacket['chaddr'].replace(':', '').encode('ascii')
+        bpacket += (0).to_bytes(10, 'big') # mac gap
         bpacket += (0).to_bytes(192, 'big') # gap
-        bpacket += self.packet['cookie'].to_bytes(4, 'big')
+        bpacket += self.outpacket['cookie'].to_bytes(4, 'big')
         # options
+        bpacket += self._optionsBytes()
         print(bpacket)
-        raise NotImplementedError('not, yet')
+        return bpacket
+    
+    def _optionsBytes(self):
+        bopts = bytearray()
+        for key, val in self.outpacket['options'].items():
+            print(key)
+            print(val)
+            print(type(val))
+            if key == 'messageType':
+                bopts.append(53)
+                bopts.append(1)
+                bopts.append(val)
+            if key == 'netmask':
+                bopts.append(1)
+                bopts.append(4)
+                val.to_bytes(4, 'big')
+            if key == 'router':
+                bopts.append(1)
+                bopts.append(4)
+                val.to_bytes(4, 'big')
+            if key == 'lease':
+                bopts.append(51)
+                bopts.append(4)
+                val.to_bytes(4, 'big')
+            if key == 'dns':
+                ips = val.split(',')
+                bopts.append(6)
+                bopts.append(len(ips)*4)
+                for dns in ips:
+                    bopts.append(misc.ip2int(dns))
+                
+        return bopts
 
 class DHCPDiscoverResolver(DHCPResolver): # DISCOVER -> OFFER
     def resolve(self):
