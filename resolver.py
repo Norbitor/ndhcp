@@ -7,7 +7,8 @@ class DHCPResolver:
         self.db = db
         self.outpacket = misc.getGeneralOutputPacket(packet['xid'], packet['cookie'])
         self.outpacket['siaddr'] = misc.ip2int(config['zone']['server'])
-        # tmp yet
+
+        # zero values for bug-tolerance
         self.outpacket['yiaddr'] = 0
         self.outpacket['ciaddr'] = 0
         self.outpacket['giaddr'] = 0
@@ -47,9 +48,6 @@ class DHCPResolver:
     def _optionsBytes(self):
         bopts = bytearray()
         for key, val in self.outpacket['options'].items():
-            print(key)
-            print(val)
-            print(type(val))
             if key == 'messageType':
                 bopts.append(53)
                 bopts.append(1)
@@ -72,7 +70,7 @@ class DHCPResolver:
                 bopts.append(len(ips)*4)
                 for dns in ips:
                     bopts.append(misc.ip2int(dns))
-                
+
         return bopts
 
 class DHCPDiscoverResolver(DHCPResolver): # DISCOVER -> OFFER

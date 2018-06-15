@@ -7,7 +7,8 @@ from resolver import DHCPDeclineResolver, DHCPDiscoverResolver, \
                      DHCPReleaseResolver, DHCPRequestResolver
 from socket import socket, AF_INET, SOCK_DGRAM, SOL_SOCKET, SO_REUSEADDR, \
                    SO_REUSEPORT, SOL_IP, IP_MULTICAST_TTL, IP_MULTICAST_LOOP, \
-                   IP_MULTICAST_IF, inet_aton, SHUT_RD, gethostbyname, gethostname
+                   IP_MULTICAST_IF, inet_aton, SHUT_RD, gethostbyname, gethostname, \
+                   SO_BROADCAST
 
 class DHCPServer:
     def __init__(self):
@@ -28,6 +29,7 @@ class DHCPServer:
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         self.socket.setsockopt(SOL_SOCKET, SO_REUSEPORT, 1)
+        self.socket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_TTL, 20)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_LOOP, 1)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_IF, inet_aton(gethostbyname(gethostname())))
@@ -59,7 +61,7 @@ class DHCPServer:
         self._sendPacket(resolver.toBytes(), addr)
     
     def _sendPacket(self, data, addr):
-        pass
+        self.socket.sendto(data, ('<broadcast>', 68))
 
     def listen(self):
         self.socket.bind(('', 67))
