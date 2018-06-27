@@ -1,4 +1,5 @@
 import misc
+from ipaddress import IPv4Network, IPv4Address
 
 class DHCPResolver:
     def __init__(self, packet, config, db):
@@ -10,9 +11,9 @@ class DHCPResolver:
 
         # zero values for bug-tolerance
         self.outpacket['yiaddr'] = 0
-        self.outpacket['ciaddr'] = 0
-        self.outpacket['giaddr'] = 0
 
+        self.outpacket['ciaddr'] = self.packet['ciaddr']
+        self.outpacket['giaddr'] = misc.ip2int(config['zone']['gateway'])
         self.outpacket['chaddr'] = packet['chaddr']
         self.outpacket['options']['netmask'] = misc.ip2int(config['zone']['netmask'])
         self.outpacket['options']['router']  = misc.ip2int(config['zone']['gateway'])
@@ -73,29 +74,65 @@ class DHCPResolver:
 
         return bopts
 
+    def nextIP(self):
+        ips = []
+        for cl in self.db.client_list:
+            ips.append(cl[1])
+
+        netmask = int(IPv4Address(self.config['zone']['netmask']))
+        start   = int(IPv4Address(self.config['zone']['start']))
+        net     = start & netmask # bit-OR to extract network part from IP addr
+        for i in range(start + 1, start + self.config['zone']['end']):
+            genip_net = i & netmask
+            if genip_net != net:
+                raise ValueError('Generated IP is from invalid network')
+            ip = str(IPv4Address(i))
+            if ip not in ips:
+                return ip
+        raise ValueError('No free IP address found in the pool')
+
+# self.outpacket['yiaddr'] = 0
+# self.outpacket['giaddr'] = 0
 class DHCPDiscoverResolver(DHCPResolver): # DISCOVER -> OFFER
     def resolve(self):
         self.outpacket['options']['messageType'] = 2
         if self.db.isEmpty():
+            print("DB empty")
             self.outpacket['yiaddr'] = misc.ip2int(self.config['zone']['start'])
-        print(self.outpacket)
-
+            self.db.addClient(self.packet['chaddr'], self.config['zone']['start'])
+        else:
+            nextip = self.nextIP()
+            print(nextip)
+            self.outpacket['yiaddr'] = misc.ip2int(nextip)
+            self.db.addClient(self.packet['chaddr'], nextip)
+        print(self.db.client_list)
 
 class DHCPRequestResolver(DHCPResolver): # REQUEST -> ACK
     def resolve(self):
         self.outpacket['options']['messageType'] = 5
-        print(self.outpacket)
+        cli_entry = self.db.getClient(self.packet['chaddr'])
+        if self.db.isEmpty():
+            print("DB empty")
+            self.outpacket['yiaddr'] = misc.ip2int(self.config['zone']['start'])
+            self.db.addClient(self.packet['chaddr'], self.config['zone']['start'])
+        elif cli_entry == None:
+            nextip = self.nextIP()
+            self.outpacket['yiaddr'] = misc.ip2int(nextip)
+            self.db.addClient(self.packet['chaddr'], nextip)
+        else:
+            self.outpacket['yiaddr'] = misc.ip2int(cli_entry[1])
 
+        print(self.outpacket)
 
 class DHCPDeclineResolver(DHCPResolver):
     def resolve(self):
-        raise NotImplementedError('This method has to be overrided.')
+        raise NotImplementedError('This operations is not supported, yet.')
 
 
 class DHCPReleaseResolver(DHCPResolver):
     def resolve(self):
-        raise NotImplementedError('This method has to be overrided.')
-
+        self.db.deleteClient(self.packet['chaddr'])
+        self.outpacket = b'OK'
 
 class DHCPInformResolver(DHCPResolver):
     def resolve(self):

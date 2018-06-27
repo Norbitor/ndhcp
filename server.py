@@ -32,7 +32,6 @@ class DHCPServer:
         self.socket.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_TTL, 20)
         self.socket.setsockopt(SOL_IP, IP_MULTICAST_LOOP, 1)
-        self.socket.setsockopt(SOL_IP, IP_MULTICAST_IF, inet_aton(gethostbyname(gethostname())))
     
     def _dispatch(self, data, addr):
         pack = misc.getGeneralPacket(data)
