@@ -60,7 +60,11 @@ class DHCPServer:
         self._sendPacket(resolver.toBytes(), addr)
     
     def _sendPacket(self, data, addr):
-        self.socket.sendto(data, ('<broadcast>', 68))
+        sendsock = socket(AF_INET, SOCK_DGRAM)
+        sendsock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        sendsock.bind((self.config['zone']['server'], 0))
+        sendsock.sendto(data, ('<broadcast>', 68))
+        sendsock.close()
 
     def listen(self):
         self.socket.bind(('', 67))
