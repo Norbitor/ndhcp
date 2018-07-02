@@ -20,6 +20,7 @@ class DHCPResolver:
         self.outpacket['options']['lease'] = int(config['zone']['lease'])
         self.outpacket['options']['dhcpsrv'] = misc.ip2int(config['zone']['server'])
         self.outpacket['options']['dnssrvs'] = config['zone']['dns']
+        self.outpacket['options']['end'] = b'\xff'
 
     def resolve(self):
         raise NotImplementedError('This method has to be overrided.')
@@ -37,7 +38,7 @@ class DHCPResolver:
         bpacket += self.outpacket['yiaddr'].to_bytes(4, 'big')
         bpacket += self.outpacket['siaddr'].to_bytes(4, 'big')
         bpacket += self.outpacket['giaddr'].to_bytes(4, 'big')
-        bpacket += bytes.fromhex(self.outpacket['chaddr'])
+        bpacket += bytes.fromhex(self.outpacket['chaddr'].replace(':', ''))
         bpacket += (0).to_bytes(10, 'big') # mac gap
         bpacket += (0).to_bytes(192, 'big') # gap
         bpacket += self.outpacket['cookie'].to_bytes(4, 'big')
@@ -58,7 +59,7 @@ class DHCPResolver:
                 bopts.append(4)
                 val.to_bytes(4, 'big')
             if key == 'router':
-                bopts.append(1)
+                bopts.append(3)
                 bopts.append(4)
                 val.to_bytes(4, 'big')
             if key == 'lease':
@@ -71,6 +72,8 @@ class DHCPResolver:
                 bopts.append(len(ips)*4)
                 for dns in ips:
                     bopts.append(misc.ip2int(dns))
+            if key == 'end':
+                bopts.append(255)
 
         return bopts
 
