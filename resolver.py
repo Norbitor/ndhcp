@@ -81,8 +81,9 @@ class DHCPResolver:
 
         netmask = int(IPv4Address(self.config['zone']['netmask']))
         start   = int(IPv4Address(self.config['zone']['start']))
+        end     = int(IPv4Address(self.config['zone']['end']))
         net     = start & netmask # bit-OR to extract network part from IP addr
-        for i in range(start + 1, start + self.config['zone']['end']):
+        for i in range(start, end):
             genip_net = i & netmask
             if genip_net != net:
                 raise ValueError('Generated IP is from invalid network')
