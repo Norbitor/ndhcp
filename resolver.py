@@ -72,7 +72,7 @@ class DHCPResolver:
                 bopts.append(6)
                 bopts.append(len(ips)*4)
                 for dns in ips:
-                    bopts.append(misc.ip2int(dns))
+                    bopts += misc.ip2int(dns).to_bytes(4, 'big')
 
         return bopts
 
