@@ -1,4 +1,5 @@
 import misc
+import time
 from ipaddress import IPv4Network, IPv4Address
 
 class DHCPResolver:
@@ -98,15 +99,18 @@ class DHCPResolver:
 class DHCPDiscoverResolver(DHCPResolver): # DISCOVER -> OFFER
     def resolve(self):
         self.outpacket['options']['messageType'] = 2
+        cli_entry = self.db.getClient(self.packet['chaddr'])
         if self.db.isEmpty():
             print("DB empty")
             self.outpacket['yiaddr'] = misc.ip2int(self.config['zone']['start'])
             self.db.addClient(self.packet['chaddr'], self.config['zone']['start'])
-        else:
+        elif cli_entry == None:
             nextip = self.nextIP()
             print(nextip)
             self.outpacket['yiaddr'] = misc.ip2int(nextip)
-            self.db.addClient(self.packet['chaddr'], nextip)
+            self.db.addClient(self.packet['chaddr'], nextip, time.time()+int(self.config['zone']['lease']))
+        else:
+            self.outpacket['yiaddr'] = misc.ip2int(cli_entry[1])
         print(self.db.client_list)
 
 class DHCPRequestResolver(DHCPResolver): # REQUEST -> ACK
@@ -124,7 +128,6 @@ class DHCPRequestResolver(DHCPResolver): # REQUEST -> ACK
         else:
             self.outpacket['yiaddr'] = misc.ip2int(cli_entry[1])
 
-        print(self.outpacket)
 
 class DHCPDeclineResolver(DHCPResolver):
     def resolve(self):
