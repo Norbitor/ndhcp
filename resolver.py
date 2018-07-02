@@ -66,7 +66,7 @@ class DHCPResolver:
                 bopts.append(51)
                 bopts.append(4)
                 bopts += val.to_bytes(4, 'big')
-            if key == 'dns':
+            if key == 'dnssrvs':
                 ips = val.split(',')
                 bopts.append(6)
                 bopts.append(len(ips)*4)
