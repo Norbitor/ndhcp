@@ -37,7 +37,7 @@ class DHCPResolver:
         bpacket += self.outpacket['yiaddr'].to_bytes(4, 'big')
         bpacket += self.outpacket['siaddr'].to_bytes(4, 'big')
         bpacket += self.outpacket['giaddr'].to_bytes(4, 'big')
-        bpacket += self.outpacket['chaddr'].replace(':', '').encode('ascii')
+        bpacket += bytes.fromhex(self.outpacket['chaddr'])
         bpacket += (0).to_bytes(10, 'big') # mac gap
         bpacket += (0).to_bytes(192, 'big') # gap
         bpacket += self.outpacket['cookie'].to_bytes(4, 'big')
@@ -79,15 +79,15 @@ class DHCPResolver:
         for cl in self.db.client_list:
             ips.append(cl[1])
 
-        netmask = int(IPv4Address(self.config['zone']['netmask']))
-        start   = int(IPv4Address(self.config['zone']['start']))
-        end     = int(IPv4Address(self.config['zone']['end']))
+        netmask = misc.ip2int(self.config['zone']['netmask'])
+        start   = misc.ip2int(self.config['zone']['start'])
+        end     = misc.ip2int(self.config['zone']['end'])
         net     = start & netmask # bit-OR to extract network part from IP addr
         for i in range(start, end):
             genip_net = i & netmask
             if genip_net != net:
                 raise ValueError('Generated IP is from invalid network')
-            ip = str(IPv4Address(i))
+            ip = misc.int2ip(i)
             if ip not in ips:
                 return ip
         raise ValueError('No free IP address found in the pool')
