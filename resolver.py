@@ -57,15 +57,15 @@ class DHCPResolver:
             if key == 'netmask':
                 bopts.append(1)
                 bopts.append(4)
-                val.to_bytes(4, 'big')
+                bopts += val.to_bytes(4, 'big')
             if key == 'router':
                 bopts.append(3)
                 bopts.append(4)
-                val.to_bytes(4, 'big')
+                bopts += val.to_bytes(4, 'big')
             if key == 'lease':
                 bopts.append(51)
                 bopts.append(4)
-                val.to_bytes(4, 'big')
+                bopts += val.to_bytes(4, 'big')
             if key == 'dns':
                 ips = val.split(',')
                 bopts.append(6)
