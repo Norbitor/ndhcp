@@ -53,6 +53,7 @@ class DHCPServer:
             self.log.info('Processing RELEASE message.')
             resolver = DHCPReleaseResolver(pack, self.config, self.db)
             resolver.resolve()
+            return
         elif pack['options']['messageType'] == 'INFORM':
             self.log.info('Processing INFORM message.')
             resolver = DHCPInformResolver(pack, self.config, self.db)

@@ -9,6 +9,7 @@ class DHCPResolver:
         self.db = db
         self.outpacket = misc.getGeneralOutputPacket(packet['xid'], packet['cookie'])
         self.outpacket['siaddr'] = misc.ip2int(config['zone']['server'])
+        self.log = misc.getLogger(__class__.__name__)
 
         # zero values for bug-tolerance
         self.outpacket['yiaddr'] = 0
@@ -45,7 +46,7 @@ class DHCPResolver:
         # options
         bpacket += self._optionsBytes()
         bpacket.append(255) # end option
-        print(bpacket)
+        self.log.info('Prepared bytes to send')
         return bpacket
     
     def _optionsBytes(self):
@@ -94,19 +95,16 @@ class DHCPResolver:
                 return ip
         raise ValueError('No free IP address found in the pool')
 
-# self.outpacket['yiaddr'] = 0
-# self.outpacket['giaddr'] = 0
 class DHCPDiscoverResolver(DHCPResolver): # DISCOVER -> OFFER
     def resolve(self):
         self.outpacket['options']['messageType'] = 2
         cli_entry = self.db.getClient(self.packet['chaddr'])
         if self.db.isEmpty():
-            print("DB empty")
+            self.log.info('DB empty. First address from pool will be assigned')
             self.outpacket['yiaddr'] = misc.ip2int(self.config['zone']['start'])
             self.db.addClient(self.packet['chaddr'], self.config['zone']['start'])
         elif cli_entry == None:
             nextip = self.nextIP()
-            print(nextip)
             self.outpacket['yiaddr'] = misc.ip2int(nextip)
             self.db.addClient(self.packet['chaddr'], nextip, time.time()+int(self.config['zone']['lease']))
         else:
@@ -118,7 +116,7 @@ class DHCPRequestResolver(DHCPResolver): # REQUEST -> ACK
         self.outpacket['options']['messageType'] = 5
         cli_entry = self.db.getClient(self.packet['chaddr'])
         if self.db.isEmpty():
-            print("DB empty")
+            self.log.warn('DB empty. First address from pool will be assigned')
             self.outpacket['yiaddr'] = misc.ip2int(self.config['zone']['start'])
             self.db.addClient(self.packet['chaddr'], self.config['zone']['start'])
         elif cli_entry == None:
@@ -129,10 +127,9 @@ class DHCPRequestResolver(DHCPResolver): # REQUEST -> ACK
             self.outpacket['yiaddr'] = misc.ip2int(cli_entry[1])
 
 
-class DHCPDeclineResolver(DHCPResolver):
+class DHCPDeclineResolver(DHCPResolver): # DECLINE -> OFFER
     def resolve(self):
         nextip = self.nextIP()
-        print(nextip)
         self.db.deleteClient(self.packet['chaddr'])
         self.outpacket['yiaddr'] = misc.ip2int(nextip)
         self.db.addClient(self.packet['chaddr'], nextip, time.time()+int(self.config['zone']['lease']))
@@ -143,7 +140,7 @@ class DHCPReleaseResolver(DHCPResolver):
         self.db.deleteClient(self.packet['chaddr'])
         self.outpacket = b'OK'
 
-class DHCPInformResolver(DHCPResolver):
+class DHCPInformResolver(DHCPResolver): # INFORM -> ACK
     def resolve(self):
         self.outpacket['options']['messageType'] = 5
         print(self.outpacket)
