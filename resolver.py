@@ -44,7 +44,7 @@ class DHCPResolver:
         bpacket += self.outpacket['cookie'].to_bytes(4, 'big')
         # options
         bpacket += self._optionsBytes()
-        bpacket.append(255)
+        bpacket.append(255) # end option
         print(bpacket)
         return bpacket
     
@@ -131,7 +131,11 @@ class DHCPRequestResolver(DHCPResolver): # REQUEST -> ACK
 
 class DHCPDeclineResolver(DHCPResolver):
     def resolve(self):
-        raise NotImplementedError('This operations is not supported, yet.')
+        nextip = self.nextIP()
+        print(nextip)
+        self.db.deleteClient(self.packet['chaddr'])
+        self.outpacket['yiaddr'] = misc.ip2int(nextip)
+        self.db.addClient(self.packet['chaddr'], nextip, time.time()+int(self.config['zone']['lease']))
 
 
 class DHCPReleaseResolver(DHCPResolver):
